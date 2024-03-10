@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+        body { background-color: #191919; }
+        p { color: #e5e5e5; font-family: "Droid Serif", serif; font-weight: normal; font-style: normal; line-height: 150%; cursor: default; }
+        canvas { border: none; outline: none; }
+        div { position: fixed; top: 47%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+    </style>
+</head>
+<body>
+    <div>
+        <canvas id="c" height="700" width="700"></canvas>
+        <form><input type="button" value="Regenerate pixels" onclick="location.reload()"></form>
+    </div>
+    <p id="r"></p>
+    <script>
+        const getQueryParam = (param, defaultValue, min, max) => {
+            const value = parseInt(new URLSearchParams(location.search).get(param));
+            return !isNaN(value) && value >= min && value <= max ? value : defaultValue;
+        };
+
+        function initializeCanvas(size) {
+            const canvas = document.getElementById("c");
+            canvas.width = canvas.height = size;
+            return canvas.getContext("2d");
+        }
+
+        const generateRule = numColors => {
+            let rule = new URLSearchParams(location.search).get('rule');
+            if (!rule) {
+                rule = numColors + 'c' + Array.from({length: numColors ** 8}, () => Math.floor(Math.random() * numColors)).join('');
+            }
+            return rule;
+        };
+
+        const generateColorPalette = numColors => Array.from({length: numColors}, () => Array.from({length: 3}, () => Math.floor(Math.random() * 256)));
+
+        function renderPattern(context, grid, palette, size) {
+            const imageData = context.createImageData(size, size);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                let p = Math.floor(i / 4), [x, y] = [p % size, Math.floor(p / size)];
+                let color = palette[grid[x + 1][y + 1]];
+                imageData.data.set([color[0], color[1], color[2], 255], i);
+            }
+            context.putImageData(imageData, 0, 0);
+        }
+
+        const sideLength = getQueryParam('sidelength', 700, 4, 16384);
+        const numColors = getQueryParam('colors', 3, 2, 7);
+        const verbose = new URLSearchParams(location.search).get('verbose') === 'true';
+        const context = initializeCanvas(sideLength);
+        const rule = generateRule(numColors);
+        if (verbose) {
+            document.getElementById("r").innerHTML = 'Rule: ' + rule;
+        }
+        const colorPalette = generateColorPalette(numColors);
+        const grid = Array(sideLength + 2).fill().map(() => new Uint8Array(sideLength + 2));
+        const base = parseInt(rule[0]);
+        const automatonRule = rule.slice(2).split('').map(x => parseInt(x, base));
+        const directions = [[0, -1], [-1, 0], [0, 1], [1, 0]];
+        const state = [Math.floor((sideLength + 1) / 2), Math.floor((sideLength + 1) / 2), 0, 1, 0, 1];
+        grid[state[0]][state[1]] = 1;
+        state[0]++;
+
+        for (let i = 0; i < sideLength * sideLength - 1; i++) {
+            let neighbors = [
+                grid[state[0] - 1][state[1] - 1], grid[state[0]][state[1] - 1], grid[state[0] + 1][state[1] - 1], 
+                grid[state[0] + 1][state[1]], grid[state[0] + 1][state[1] + 1], grid[state[0]][state[1] + 1], 
+                grid[state[0] - 1][state[1] + 1], grid[state[0] - 1][state[1]]
+            ];
+            grid[state[0]][state[1]] = automatonRule[neighbors.reduce((a, v, i) => a + v * base ** i, 0)];
+            let move = directions[state[2]];
+            state[0] += move[0];
+            state[1] += move[1];
+            state[4]++;
+            if (state[4] == state[3]) { 
+                state[2] = (state[2] + 1) % 4; state[4] = 0; state[5]++; 
+                if (state[5] == 2) { state[3]++; state[5] = 0; } 
+            }
+        }
+
+        renderPattern(context, grid, colorPalette, sideLength);
+    </script>
+</body>
+</html>
