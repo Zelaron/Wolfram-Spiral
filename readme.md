@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/Zelaron/Wolfram-Spiral/main/examples.jpg">
+![Wolfram spirals](https://github.com/Ionosi/assets/blob/main/examples.jpg?raw=true)
 
 # Wolfram-Spiral
 
