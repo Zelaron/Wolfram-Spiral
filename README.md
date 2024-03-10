@@ -1,3 +1,4 @@
+![Examples of Wolfram spirals](examples.jpg?raw=true "Wolfram spirals")
 # Wolfram-Spiral
 
 This project features a web-based tool for generating and visualizing an analogue of Wolfram's cellular automaton in a unique spiral pattern. It offers user customization to create diverse visual patterns.
